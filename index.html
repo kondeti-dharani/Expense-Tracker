@@ -1,0 +1,1172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Expense Tracker — Personal Finance Manager</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Chart.js for Analytics -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #f8fafc;
+    }
+    .fade-in {
+      animation: fadeIn 0.25s ease-in-out;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    /* Custom scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+  </style>
+</head>
+<body class="text-slate-800 antialiased min-h-screen flex flex-col">
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+  <!-- ==================== AUTHENTICATION VIEW ==================== -->
+  <div id="auth-view" class="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-indigo-50 via-white to-emerald-50">
+    <div class="w-full max-w-md bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden fade-in">
+      <!-- Header -->
+      <div class="bg-slate-900 px-8 py-7 text-center text-white">
+        <div class="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-indigo-600 mb-3 shadow-lg shadow-indigo-500/30">
+          <i data-lucide="wallet" class="w-6 h-6 text-white"></i>
+        </div>
+        <h1 class="text-2xl font-bold tracking-tight">Expense Tracker</h1>
+        <p class="text-slate-400 text-sm mt-1">Smart personal finance & budget control</p>
+      </div>
+
+      <!-- Auth Tabs -->
+      <div class="grid grid-cols-2 border-b border-slate-200 bg-slate-50/70">
+        <button id="tab-login" onclick="switchAuthTab('login')" class="py-3.5 text-sm font-semibold text-indigo-600 border-b-2 border-indigo-600 bg-white transition-all">
+          Log In
+        </button>
+        <button id="tab-signup" onclick="switchAuthTab('signup')" class="py-3.5 text-sm font-semibold text-slate-500 hover:text-slate-700 border-b-2 border-transparent transition-all">
+          Sign Up
+        </button>
+      </div>
+
+      <!-- Error Alert Banner -->
+      <div id="auth-error" class="hidden mx-6 mt-5 p-3 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium flex items-center gap-2">
+        <i data-lucide="alert-circle" class="w-4 h-4 shrink-0"></i>
+        <span id="auth-error-text">Invalid credentials</span>
+      </div>
+
+      <!-- Login Form -->
+      <form id="login-form" onsubmit="handleLogin(event)" class="p-6 space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">Email Address</label>
+          <div class="relative">
+            <i data-lucide="mail" class="w-4 h-4 text-slate-400 absolute left-3.5 top-3"></i>
+            <input type="email" id="login-email" required placeholder="you@example.com"
+              class="w-full pl-10 pr-4 py-2.5 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition" />
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">Password</label>
+          <div class="relative">
+            <i data-lucide="lock" class="w-4 h-4 text-slate-400 absolute left-3.5 top-3"></i>
+            <input type="password" id="login-password" required placeholder="••••••••"
+              class="w-full pl-10 pr-4 py-2.5 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition" />
+          </div>
+        </div>
+
+        <button type="submit" class="w-full py-2.5 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl shadow-md shadow-indigo-600/20 transition flex items-center justify-center gap-2 text-sm">
+          <span>Sign In to Dashboard</span>
+          <i data-lucide="arrow-right" class="w-4 h-4"></i>
+        </button>
+
+        <div class="relative my-4">
+          <div class="absolute inset-0 flex items-center"><div class="w-full border-t border-slate-200"></div></div>
+          <div class="relative flex justify-center text-xs"><span class="px-2 bg-white text-slate-400">Or test immediately</span></div>
+        </div>
+
+        <button type="button" onclick="loginWithDemo()" class="w-full py-2.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl transition flex items-center justify-center gap-2 text-sm">
+          <i data-lucide="sparkles" class="w-4 h-4 text-indigo-600"></i>
+          <span>Launch Demo Account</span>
+        </button>
+      </form>
+
+      <!-- Sign Up Form -->
+      <form id="signup-form" onsubmit="handleSignup(event)" class="hidden p-6 space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">Full Name</label>
+          <div class="relative">
+            <i data-lucide="user" class="w-4 h-4 text-slate-400 absolute left-3.5 top-3"></i>
+            <input type="text" id="signup-name" required placeholder="Alex Morgan"
+              class="w-full pl-10 pr-4 py-2.5 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition" />
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">Email Address</label>
+          <div class="relative">
+            <i data-lucide="mail" class="w-4 h-4 text-slate-400 absolute left-3.5 top-3"></i>
+            <input type="email" id="signup-email" required placeholder="alex@example.com"
+              class="w-full pl-10 pr-4 py-2.5 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition" />
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">Password</label>
+          <div class="relative">
+            <i data-lucide="lock" class="w-4 h-4 text-slate-400 absolute left-3.5 top-3"></i>
+            <input type="password" id="signup-password" required minlength="6" placeholder="Min. 6 characters"
+              class="w-full pl-10 pr-4 py-2.5 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition" />
+          </div>
+        </div>
+
+        <button type="submit" class="w-full py-2.5 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl shadow-md shadow-indigo-600/20 transition flex items-center justify-center gap-2 text-sm">
+          <span>Create Free Account</span>
+          <i data-lucide="user-plus" class="w-4 h-4"></i>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ==================== MAIN DASHBOARD VIEW ==================== -->
+  <div id="dashboard-view" class="hidden flex-1 flex flex-col">
+    <!-- Top Navigation Bar -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-30">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-lg bg-indigo-600 flex items-center justify-center text-white shadow-sm">
+            <i data-lucide="wallet" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <span class="font-bold text-lg text-slate-900 tracking-tight">Expense Tracker</span>
+            <span class="hidden sm:inline-block ml-2 text-xs font-medium px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700">Personal</span>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-4">
+          <div class="flex items-center gap-2.5">
+            <div id="user-avatar" class="w-9 h-9 rounded-full bg-indigo-100 text-indigo-700 font-bold text-sm flex items-center justify-center border border-indigo-200">
+              AM
+            </div>
+            <div class="hidden md:block text-left">
+              <p id="user-display-name" class="text-sm font-semibold text-slate-800 leading-none">Alex Morgan</p>
+              <p id="user-display-email" class="text-xs text-slate-500 mt-1">alex@example.com</p>
+            </div>
+          </div>
+
+          <div class="h-6 w-px bg-slate-200"></div>
+
+          <button onclick="handleLogout()" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition">
+            <i data-lucide="log-out" class="w-4 h-4"></i>
+            <span>Logout</span>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6 flex-1">
+      
+      <!-- Summary KPI Cards -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+        <!-- Total Balance -->
+        <div class="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-sm flex items-center justify-between">
+          <div>
+            <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Total Balance</p>
+            <h2 id="stat-balance" class="text-3xl font-bold text-slate-900 mt-1.5">$0.00</h2>
+            <p class="text-xs text-slate-400 mt-1">Net available funds</p>
+          </div>
+          <div class="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
+            <i data-lucide="landmark" class="w-6 h-6"></i>
+          </div>
+        </div>
+
+        <!-- Total Income -->
+        <div class="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-sm flex items-center justify-between">
+          <div>
+            <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Total Income</p>
+            <h2 id="stat-income" class="text-3xl font-bold text-emerald-600 mt-1.5">$0.00</h2>
+            <p class="text-xs text-slate-400 mt-1">All recorded earnings</p>
+          </div>
+          <div class="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+            <i data-lucide="trending-up" class="w-6 h-6"></i>
+          </div>
+        </div>
+
+        <!-- Total Expenses -->
+        <div class="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-sm flex items-center justify-between">
+          <div>
+            <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Total Expenses</p>
+            <h2 id="stat-expense" class="text-3xl font-bold text-rose-600 mt-1.5">$0.00</h2>
+            <p class="text-xs text-slate-400 mt-1">All recorded spending</p>
+          </div>
+          <div class="w-12 h-12 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center">
+            <i data-lucide="trending-down" class="w-6 h-6"></i>
+          </div>
+        </div>
+      </div>
+
+      <!-- Create Form & Analytics Grid -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <!-- CREATE: Add New Transaction Form (7 cols) -->
+        <div class="lg:col-span-7 bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6">
+          <div class="flex items-center justify-between mb-5">
+            <div>
+              <h3 class="text-base font-bold text-slate-900">Add New Transaction</h3>
+              <p class="text-xs text-slate-500">Record an income or expense entry</p>
+            </div>
+            <span class="px-2.5 py-1 text-xs font-medium bg-slate-100 text-slate-600 rounded-lg">Quick Entry</span>
+          </div>
+
+          <form id="create-transaction-form" onsubmit="handleCreateTransaction(event)" class="space-y-4">
+            <!-- Type Switcher -->
+            <div class="grid grid-cols-2 gap-3 p-1 bg-slate-100 rounded-xl">
+              <label class="cursor-pointer">
+                <input type="radio" name="tx-type" value="expense" checked onchange="updateCategoryOptions('create')" class="peer sr-only" />
+                <div class="py-2 text-center text-xs font-semibold rounded-lg text-slate-600 peer-checked:bg-white peer-checked:text-rose-600 peer-checked:shadow-sm transition">
+                  − Expense
+                </div>
+              </label>
+              <label class="cursor-pointer">
+                <input type="radio" name="tx-type" value="income" onchange="updateCategoryOptions('create')" class="peer sr-only" />
+                <div class="py-2 text-center text-xs font-semibold rounded-lg text-slate-600 peer-checked:bg-white peer-checked:text-emerald-600 peer-checked:shadow-sm transition">
+                  + Income
+                </div>
+              </label>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">Title / Description *</label>
+                <input type="text" id="tx-title" required placeholder="e.g., Grocery Shopping"
+                  class="w-full px-3.5 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none" />
+              </div>
+
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">Amount ($) *</label>
+                <input type="number" id="tx-amount" required step="0.01" min="0.01" placeholder="0.00"
+                  class="w-full px-3.5 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none" />
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">Category *</label>
+                <select id="tx-category" required onchange="toggleCustomCategory('create')"
+                  class="w-full px-3.5 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none bg-white">
+                </select>
+                <!-- Custom Category Input when 'Other' is selected -->
+                <div id="tx-custom-category-wrap" class="hidden mt-2 fade-in">
+                  <input type="text" id="tx-custom-category" placeholder="Enter custom category name..."
+                    class="w-full px-3.5 py-2 text-sm border border-indigo-300 bg-indigo-50/30 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none" />
+                </div>
+              </div>
+
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">Date *</label>
+                <input type="date" id="tx-date" required
+                  class="w-full px-3.5 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none" />
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">Notes (Optional)</label>
+              <input type="text" id="tx-notes" placeholder="Add payment method, merchant, or extra details..."
+                class="w-full px-3.5 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none" />
+            </div>
+
+            <div class="pt-1 flex justify-end">
+              <button type="submit" class="w-full sm:w-auto px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-xl shadow-sm transition flex items-center justify-center gap-2">
+                <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                <span>Add Transaction</span>
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <!-- ANALYTICS: Expense Breakdown Chart (5 cols) -->
+        <div class="lg:col-span-5 bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6 flex flex-col justify-between">
+          <div>
+            <h3 class="text-base font-bold text-slate-900">Spending Breakdown</h3>
+            <p class="text-xs text-slate-500">Expenses distributed by category</p>
+          </div>
+
+          <div class="relative h-52 my-4 flex items-center justify-center">
+            <canvas id="expenseChart"></canvas>
+            <div id="chart-empty-state" class="hidden text-center">
+              <i data-lucide="pie-chart" class="w-10 h-10 text-slate-300 mx-auto mb-2"></i>
+              <p class="text-xs text-slate-400 font-medium">No expense data to visualize yet</p>
+            </div>
+          </div>
+
+          <div id="category-legend" class="space-y-2 max-h-28 overflow-y-auto pr-1 text-xs">
+            <!-- Populated dynamically -->
+          </div>
+        </div>
+      </div>
+
+      <!-- READ / UPDATE / DELETE: Transactions History Table -->
+      <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
+        <!-- Toolbar & Filters -->
+        <div class="p-6 border-b border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h3 class="text-base font-bold text-slate-900">Transaction History</h3>
+            <p class="text-xs text-slate-500">Manage, filter, edit, or delete your entries</p>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-2.5">
+            <!-- Search -->
+            <div class="relative flex-1 sm:flex-initial">
+              <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-2.5"></i>
+              <input type="text" id="filter-search" oninput="renderDashboard()" placeholder="Search title or notes..."
+                class="w-full sm:w-48 pl-9 pr-3 py-1.5 text-xs border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none" />
+            </div>
+
+            <!-- Type Filter -->
+            <select id="filter-type" onchange="renderDashboard()"
+              class="px-3 py-1.5 text-xs border border-slate-300 rounded-lg bg-white focus:ring-2 focus:ring-indigo-500 outline-none">
+              <option value="all">All Types</option>
+              <option value="income">Income Only</option>
+              <option value="expense">Expenses Only</option>
+            </select>
+
+            <!-- Category Filter -->
+            <select id="filter-category" onchange="renderDashboard()"
+              class="px-3 py-1.5 text-xs border border-slate-300 rounded-lg bg-white focus:ring-2 focus:ring-indigo-500 outline-none">
+              <option value="all">All Categories</option>
+            </select>
+
+            <!-- Export CSV -->
+            <button onclick="exportToCSV()" title="Export filtered records to CSV"
+              class="px-3 py-1.5 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition inline-flex items-center gap-1.5">
+              <i data-lucide="download" class="w-3.5 h-3.5"></i>
+              <span>CSV</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Responsive Table -->
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="bg-slate-50/80 border-b border-slate-200 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                <th class="py-3.5 px-6">Transaction</th>
+                <th class="py-3.5 px-4">Category</th>
+                <th class="py-3.5 px-4">Date</th>
+                <th class="py-3.5 px-4 text-right">Amount</th>
+                <th class="py-3.5 px-6 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="transactions-tbody" class="divide-y divide-slate-100 text-sm">
+              <!-- Rows injected dynamically -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Empty State -->
+        <div id="table-empty-state" class="hidden py-12 px-4 text-center">
+          <div class="w-12 h-12 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-3">
+            <i data-lucide="receipt" class="w-6 h-6"></i>
+          </div>
+          <h4 class="text-sm font-semibold text-slate-800">No transactions found</h4>
+          <p class="text-xs text-slate-500 mt-1 max-w-xs mx-auto">Add a new income or expense above, or adjust your active search filters.</p>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ==================== UPDATE MODAL ==================== -->
+  <div id="edit-modal" class="hidden fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-slate-100 overflow-hidden fade-in">
+      <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+        <h3 class="text-base font-bold text-slate-900">Edit Transaction</h3>
+        <button onclick="closeEditModal()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <form id="edit-transaction-form" onsubmit="handleUpdateTransaction(event)" class="p-6 space-y-4">
+        <input type="hidden" id="edit-tx-id" />
+
+        <div class="grid grid-cols-2 gap-3 p-1 bg-slate-100 rounded-xl">
+          <label class="cursor-pointer">
+            <input type="radio" name="edit-tx-type" value="expense" onchange="updateCategoryOptions('edit')" class="peer sr-only" />
+            <div class="py-2 text-center text-xs font-semibold rounded-lg text-slate-600 peer-checked:bg-white peer-checked:text-rose-600 peer-checked:shadow-sm transition">
+              − Expense
+            </div>
+          </label>
+          <label class="cursor-pointer">
+            <input type="radio" name="edit-tx-type" value="income" onchange="updateCategoryOptions('edit')" class="peer sr-only" />
+            <div class="py-2 text-center text-xs font-semibold rounded-lg text-slate-600 peer-checked:bg-white peer-checked:text-emerald-600 peer-checked:shadow-sm transition">
+              + Income
+            </div>
+          </label>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Title / Description *</label>
+          <input type="text" id="edit-tx-title" required
+            class="w-full px-3.5 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none" />
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Amount ($) *</label>
+            <input type="number" id="edit-tx-amount" required step="0.01" min="0.01"
+              class="w-full px-3.5 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none" />
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Date *</label>
+            <input type="date" id="edit-tx-date" required
+              class="w-full px-3.5 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none" />
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Category *</label>
+          <select id="edit-tx-category" required onchange="toggleCustomCategory('edit')"
+            class="w-full px-3.5 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none bg-white">
+          </select>
+          <!-- Custom Category Input when 'Other' is selected in Edit Modal -->
+          <div id="edit-tx-custom-category-wrap" class="hidden mt-2 fade-in">
+            <input type="text" id="edit-tx-custom-category" placeholder="Enter custom category name..."
+              class="w-full px-3.5 py-2 text-sm border border-indigo-300 bg-indigo-50/30 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none" />
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Notes</label>
+          <input type="text" id="edit-tx-notes"
+            class="w-full px-3.5 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none" />
+        </div>
+
+        <div class="pt-2 flex items-center justify-end gap-2">
+          <button type="button" onclick="closeEditModal()" class="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition">
+            Cancel
+          </button>
+          <button type="submit" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-xl shadow-sm transition">
+            Save Changes
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ==================== DELETE CONFIRMATION MODAL ==================== -->
+  <div id="delete-modal" class="hidden fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-sm w-full shadow-2xl border border-slate-100 p-6 text-center fade-in">
+      <div class="w-12 h-12 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center mx-auto mb-4">
+        <i data-lucide="trash-2" class="w-6 h-6"></i>
+      </div>
+      <h3 class="text-base font-bold text-slate-900">Delete Transaction?</h3>
+      <p class="text-xs text-slate-500 mt-1.5">This action cannot be undone. Your balance and analytics will update immediately.</p>
+      <input type="hidden" id="delete-tx-id" />
+      <div class="mt-6 grid grid-cols-2 gap-3">
+        <button onclick="closeDeleteModal()" class="py-2.5 px-4 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition">
+          Cancel
+        </button>
+        <button onclick="confirmDeleteTransaction()" class="py-2.5 px-4 text-xs font-semibold text-white bg-rose-600 hover:bg-rose-700 rounded-xl shadow-sm transition">
+          Yes, Delete
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== JAVASCRIPT APPLICATION LOGIC ==================== -->
+  <script>
+    // --- Configuration & Constants (Expanded Categories) ---
+    const CATEGORIES = {
+      expense: [
+        'Food & Dining',
+        'Groceries',
+        'Housing & Rent',
+        'Utilities & Bills',
+        'Transportation',
+        'Fuel & Parking',
+        'Shopping',
+        'Entertainment',
+        'Subscriptions',
+        'Healthcare & Medical',
+        'Fitness & Gym',
+        'Education',
+        'Travel & Vacations',
+        'Personal Care',
+        'Insurance',
+        'Gifts & Donations',
+        'Taxes & Fees',
+        'Other'
+      ],
+      income: [
+        'Salary',
+        'Freelance',
+        'Business',
+        'Investments & Dividends',
+        'Bonus & Commission',
+        'Rental Income',
+        'Refunds & Cashback',
+        'Side Hustle',
+        'Pension & Stipend',
+        'Gift',
+        'Other'
+      ]
+    };
+
+    const CATEGORY_COLORS = {
+      'Food & Dining': '#f97316',
+      'Groceries': '#fb923c',
+      'Housing & Rent': '#6366f1',
+      'Utilities & Bills': '#eab308',
+      'Transportation': '#0ea5e9',
+      'Fuel & Parking': '#0284c7',
+      'Shopping': '#8b5cf6',
+      'Entertainment': '#ec4899',
+      'Subscriptions': '#d946ef',
+      'Healthcare & Medical': '#14b8a6',
+      'Fitness & Gym': '#10b981',
+      'Education': '#3b82f6',
+      'Travel & Vacations': '#06b6d4',
+      'Personal Care': '#f43f5e',
+      'Insurance': '#4f46e5',
+      'Gifts & Donations': '#e11d48',
+      'Taxes & Fees': '#78716c',
+      'Salary': '#10b981',
+      'Freelance': '#06b6d4',
+      'Business': '#84cc16',
+      'Investments & Dividends': '#3b82f6',
+      'Bonus & Commission': '#22c55e',
+      'Rental Income': '#6366f1',
+      'Refunds & Cashback': '#14b8a6',
+      'Side Hustle': '#a855f7',
+      'Pension & Stipend': '#0ea5e9',
+      'Gift': '#f43f5e',
+      'Other': '#64748b'
+    };
+
+    // Generate deterministic hex color for custom user-entered categories
+    function getCategoryColor(category) {
+      if (CATEGORY_COLORS[category]) return CATEGORY_COLORS[category];
+      const palette = ['#e11d48', '#7c3aed', '#2563eb', '#0d9488', '#d97706', '#db2777', '#4f46e5', '#059669'];
+      let hash = 0;
+      for (let i = 0; i < category.length; i++) {
+        hash = category.charCodeAt(i) + ((hash << 5) - hash);
+      }
+      return palette[Math.abs(hash) % palette.length];
+    }
+
+    const STORAGE_KEYS = {
+      USERS: 'et_users_v1',
+      SESSION: 'et_session_v1',
+      TX_PREFIX: 'et_transactions_'
+    };
+
+    let expenseChartInstance = null;
+
+    // --- Initialization ---
+    document.addEventListener('DOMContentLoaded', () => {
+      lucide.createIcons();
+      document.getElementById('tx-date').valueAsDate = new Date();
+      updateCategoryOptions('create');
+      populateFilterCategories();
+      checkAuthSession();
+    });
+
+    // --- Storage Helpers ---
+    function getUsers() {
+      return JSON.parse(localStorage.getItem(STORAGE_KEYS.USERS) || '[]');
+    }
+
+    function saveUsers(users) {
+      localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
+    }
+
+    function getSession() {
+      return JSON.parse(localStorage.getItem(STORAGE_KEYS.SESSION) || 'null');
+    }
+
+    function setSession(user) {
+      localStorage.setItem(STORAGE_KEYS.SESSION, JSON.stringify(user));
+    }
+
+    function getUserTransactions(email) {
+      return JSON.parse(localStorage.getItem(STORAGE_KEYS.TX_PREFIX + email) || '[]');
+    }
+
+    function saveUserTransactions(email, transactions) {
+      localStorage.setItem(STORAGE_KEYS.TX_PREFIX + email, JSON.stringify(transactions));
+    }
+
+    // --- Authentication Logic ---
+    function switchAuthTab(tab) {
+      const loginForm = document.getElementById('login-form');
+      const signupForm = document.getElementById('signup-form');
+      const tabLogin = document.getElementById('tab-login');
+      const tabSignup = document.getElementById('tab-signup');
+      hideAuthError();
+
+      if (tab === 'login') {
+        loginForm.classList.remove('hidden');
+        signupForm.classList.add('hidden');
+        tabLogin.className = 'py-3.5 text-sm font-semibold text-indigo-600 border-b-2 border-indigo-600 bg-white transition-all';
+        tabSignup.className = 'py-3.5 text-sm font-semibold text-slate-500 hover:text-slate-700 border-b-2 border-transparent transition-all';
+      } else {
+        signupForm.classList.remove('hidden');
+        loginForm.classList.add('hidden');
+        tabSignup.className = 'py-3.5 text-sm font-semibold text-indigo-600 border-b-2 border-indigo-600 bg-white transition-all';
+        tabLogin.className = 'py-3.5 text-sm font-semibold text-slate-500 hover:text-slate-700 border-b-2 border-transparent transition-all';
+      }
+    }
+
+    function showAuthError(msg) {
+      const errBox = document.getElementById('auth-error');
+      document.getElementById('auth-error-text').textContent = msg;
+      errBox.classList.remove('hidden');
+    }
+
+    function hideAuthError() {
+      document.getElementById('auth-error').classList.add('hidden');
+    }
+
+    function handleSignup(e) {
+      e.preventDefault();
+      hideAuthError();
+      const name = document.getElementById('signup-name').value.trim();
+      const email = document.getElementById('signup-email').value.trim().toLowerCase();
+      const password = document.getElementById('signup-password').value;
+
+      const users = getUsers();
+      if (users.some(u => u.email === email)) {
+        showAuthError('An account with this email already exists.');
+        return;
+      }
+
+      const newUser = { id: crypto.randomUUID(), name, email, password };
+      users.push(newUser);
+      saveUsers(users);
+
+      setSession({ id: newUser.id, name: newUser.name, email: newUser.email });
+      showToast(`Welcome aboard, ${name}!`, 'success');
+      checkAuthSession();
+    }
+
+    function handleLogin(e) {
+      e.preventDefault();
+      hideAuthError();
+      const email = document.getElementById('login-email').value.trim().toLowerCase();
+      const password = document.getElementById('login-password').value;
+
+      const users = getUsers();
+      const matched = users.find(u => u.email === email && u.password === password);
+
+      if (!matched) {
+        showAuthError('Invalid email or password. Try again or use the Demo Account.');
+        return;
+      }
+
+      setSession({ id: matched.id, name: matched.name, email: matched.email });
+      showToast(`Welcome back, ${matched.name}!`, 'success');
+      checkAuthSession();
+    }
+
+    function loginWithDemo() {
+      const demoEmail = 'demo@expensetracker.app';
+      const demoUser = { id: 'demo-user', name: 'Alex Morgan', email: demoEmail };
+      setSession(demoUser);
+
+      // Seed demo transactions if empty
+      const existing = getUserTransactions(demoEmail);
+      if (existing.length === 0) {
+        const today = new Date();
+        const fmtDate = (daysAgo) => {
+          const d = new Date(today);
+          d.setDate(d.getDate() - daysAgo);
+          return d.toISOString().split('T')[0];
+        };
+
+        const seedData = [
+          { id: crypto.randomUUID(), type: 'income', title: 'Monthly Tech Salary', amount: 4850.00, category: 'Salary', date: fmtDate(12), notes: 'Direct deposit' },
+          { id: crypto.randomUUID(), type: 'expense', title: 'Apartment Rent', amount: 1450.00, category: 'Housing & Rent', date: fmtDate(10), notes: 'Monthly lease payment' },
+          { id: crypto.randomUUID(), type: 'expense', title: 'Whole Foods Market', amount: 134.80, category: 'Groceries', date: fmtDate(7), notes: 'Weekly groceries' },
+          { id: crypto.randomUUID(), type: 'income', title: 'UI Design Freelance', amount: 650.00, category: 'Freelance', date: fmtDate(5), notes: 'Landing page project' },
+          { id: crypto.randomUUID(), type: 'expense', title: 'Electric & Fiber Internet', amount: 118.50, category: 'Utilities & Bills', date: fmtDate(3), notes: 'Auto-pay bill' },
+          { id: crypto.randomUUID(), type: 'expense', title: 'City Metro & Uber', amount: 46.25, category: 'Transportation', date: fmtDate(1), notes: 'Commute pass' }
+        ];
+        saveUserTransactions(demoEmail, seedData);
+      }
+
+      showToast('Logged into Demo Account', 'success');
+      checkAuthSession();
+    }
+
+    function handleLogout() {
+      localStorage.removeItem(STORAGE_KEYS.SESSION);
+      document.getElementById('login-form').reset();
+      document.getElementById('signup-form').reset();
+      showToast('Signed out successfully', 'info');
+      checkAuthSession();
+    }
+
+    function checkAuthSession() {
+      const session = getSession();
+      const authView = document.getElementById('auth-view');
+      const dashboardView = document.getElementById('dashboard-view');
+
+      if (session) {
+        authView.classList.add('hidden');
+        dashboardView.classList.remove('hidden');
+
+        // Set Header Profile Info
+        document.getElementById('user-display-name').textContent = session.name;
+        document.getElementById('user-display-email').textContent = session.email;
+        const initials = session.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+        document.getElementById('user-avatar').textContent = initials || 'U';
+
+        renderDashboard();
+      } else {
+        dashboardView.classList.add('hidden');
+        authView.classList.remove('hidden');
+      }
+      lucide.createIcons();
+    }
+
+    // --- Category Selectors & Custom 'Other' Toggle ---
+    function updateCategoryOptions(mode, selectedValue = null) {
+      const radioName = mode === 'create' ? 'tx-type' : 'edit-tx-type';
+      const selectId = mode === 'create' ? 'tx-category' : 'edit-tx-category';
+      const customInputId = mode === 'create' ? 'tx-custom-category' : 'edit-tx-custom-category';
+      const selectedType = document.querySelector(`input[name="${radioName}"]:checked`).value;
+      const selectEl = document.getElementById(selectId);
+      const customInput = document.getElementById(customInputId);
+
+      const defaultList = CATEGORIES[selectedType];
+      // Check if selectedValue is a custom category not in the predefined list
+      const isCustom = selectedValue && !defaultList.includes(selectedValue);
+
+      selectEl.innerHTML = defaultList
+        .map(cat => {
+          const shouldSelect = isCustom ? cat === 'Other' : cat === selectedValue;
+          return `<option value="${cat}" ${shouldSelect ? 'selected' : ''}>${cat}</option>`;
+        })
+        .join('');
+
+      if (isCustom) {
+        customInput.value = selectedValue;
+      } else {
+        customInput.value = '';
+      }
+
+      toggleCustomCategory(mode);
+    }
+
+    function toggleCustomCategory(mode) {
+      const selectId = mode === 'create' ? 'tx-category' : 'edit-tx-category';
+      const wrapId = mode === 'create' ? 'tx-custom-category-wrap' : 'edit-tx-custom-category-wrap';
+      const inputId = mode === 'create' ? 'tx-custom-category' : 'edit-tx-custom-category';
+
+      const selectEl = document.getElementById(selectId);
+      const wrapEl = document.getElementById(wrapId);
+      const inputEl = document.getElementById(inputId);
+
+      if (selectEl.value === 'Other') {
+        wrapEl.classList.remove('hidden');
+        inputEl.required = true;
+        inputEl.focus();
+      } else {
+        wrapEl.classList.add('hidden');
+        inputEl.required = false;
+        inputEl.value = '';
+      }
+    }
+
+    function populateFilterCategories(extraCategories = []) {
+      const filterSelect = document.getElementById('filter-category');
+      const currentVal = filterSelect.value || 'all';
+      const allCats = [...new Set([...CATEGORIES.expense, ...CATEGORIES.income, ...extraCategories])];
+
+      filterSelect.innerHTML = `<option value="all">All Categories</option>` +
+        allCats.map(cat => `<option value="${escapeHTML(cat)}" ${cat === currentVal ? 'selected' : ''}>${escapeHTML(cat)}</option>`).join('');
+    }
+
+    // --- CRUD: CREATE ---
+    function handleCreateTransaction(e) {
+      e.preventDefault();
+      const session = getSession();
+      if (!session) return;
+
+      const type = document.querySelector('input[name="tx-type"]:checked').value;
+      const title = document.getElementById('tx-title').value.trim();
+      const amount = parseFloat(document.getElementById('tx-amount').value);
+      const selectedCategory = document.getElementById('tx-category').value;
+      const customCategory = document.getElementById('tx-custom-category').value.trim();
+      const category = selectedCategory === 'Other' ? (customCategory || 'Other') : selectedCategory;
+      const date = document.getElementById('tx-date').value;
+      const notes = document.getElementById('tx-notes').value.trim();
+
+      if (!title || isNaN(amount) || amount <= 0 || !date || !category) return;
+
+      const newTx = {
+        id: crypto.randomUUID(),
+        type,
+        title,
+        amount,
+        category,
+        date,
+        notes,
+        createdAt: Date.now()
+      };
+
+      const transactions = getUserTransactions(session.email);
+      transactions.unshift(newTx);
+      saveUserTransactions(session.email, transactions);
+
+      // Reset inputs
+      document.getElementById('tx-title').value = '';
+      document.getElementById('tx-amount').value = '';
+      document.getElementById('tx-notes').value = '';
+      document.getElementById('tx-custom-category').value = '';
+      updateCategoryOptions('create');
+
+      showToast(`${type === 'income' ? 'Income' : 'Expense'} added!`, 'success');
+      renderDashboard();
+    }
+
+    // --- CRUD: UPDATE ---
+    function openEditModal(id) {
+      const session = getSession();
+      const transactions = getUserTransactions(session.email);
+      const tx = transactions.find(t => t.id === id);
+      if (!tx) return;
+
+      document.getElementById('edit-tx-id').value = tx.id;
+      document.querySelector(`input[name="edit-tx-type"][value="${tx.type}"]`).checked = true;
+      updateCategoryOptions('edit', tx.category);
+
+      document.getElementById('edit-tx-title').value = tx.title;
+      document.getElementById('edit-tx-amount').value = tx.amount;
+      document.getElementById('edit-tx-date').value = tx.date;
+      document.getElementById('edit-tx-notes').value = tx.notes || '';
+
+      document.getElementById('edit-modal').classList.remove('hidden');
+      lucide.createIcons();
+    }
+
+    function closeEditModal() {
+      document.getElementById('edit-modal').classList.add('hidden');
+    }
+
+    function handleUpdateTransaction(e) {
+      e.preventDefault();
+      const session = getSession();
+      const id = document.getElementById('edit-tx-id').value;
+      const type = document.querySelector('input[name="edit-tx-type"]:checked').value;
+      const title = document.getElementById('edit-tx-title').value.trim();
+      const amount = parseFloat(document.getElementById('edit-tx-amount').value);
+      const selectedCategory = document.getElementById('edit-tx-category').value;
+      const customCategory = document.getElementById('edit-tx-custom-category').value.trim();
+      const category = selectedCategory === 'Other' ? (customCategory || 'Other') : selectedCategory;
+      const date = document.getElementById('edit-tx-date').value;
+      const notes = document.getElementById('edit-tx-notes').value.trim();
+
+      const transactions = getUserTransactions(session.email);
+      const idx = transactions.findIndex(t => t.id === id);
+      if (idx === -1) return;
+
+      transactions[idx] = { ...transactions[idx], type, title, amount, category, date, notes };
+      saveUserTransactions(session.email, transactions);
+
+      closeEditModal();
+      showToast('Transaction updated', 'success');
+      renderDashboard();
+    }
+
+    // --- CRUD: DELETE ---
+    function openDeleteModal(id) {
+      document.getElementById('delete-tx-id').value = id;
+      document.getElementById('delete-modal').classList.remove('hidden');
+      lucide.createIcons();
+    }
+
+    function closeDeleteModal() {
+      document.getElementById('delete-modal').classList.add('hidden');
+    }
+
+    function confirmDeleteTransaction() {
+      const session = getSession();
+      const id = document.getElementById('delete-tx-id').value;
+      const transactions = getUserTransactions(session.email).filter(t => t.id !== id);
+      saveUserTransactions(session.email, transactions);
+
+      closeDeleteModal();
+      showToast('Transaction deleted', 'info');
+      renderDashboard();
+    }
+
+    // --- READ & RENDER DASHBOARD ---
+    function formatCurrency(val) {
+      return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(val);
+    }
+
+    function renderDashboard() {
+      const session = getSession();
+      if (!session) return;
+
+      const allTransactions = getUserTransactions(session.email);
+
+      // Keep filter dropdown synced with any custom user categories
+      const usedCategories = allTransactions.map(t => t.category);
+      populateFilterCategories(usedCategories);
+
+      // 1. Calculate KPI Totals
+      const totalIncome = allTransactions
+        .filter(t => t.type === 'income')
+        .reduce((sum, t) => sum + t.amount, 0);
+
+      const totalExpense = allTransactions
+        .filter(t => t.type === 'expense')
+        .reduce((sum, t) => sum + t.amount, 0);
+
+      const balance = totalIncome - totalExpense;
+
+      document.getElementById('stat-balance').textContent = formatCurrency(balance);
+      document.getElementById('stat-balance').className = `text-3xl font-bold mt-1.5 ${balance < 0 ? 'text-rose-600' : 'text-slate-900'}`;
+      document.getElementById('stat-income').textContent = formatCurrency(totalIncome);
+      document.getElementById('stat-expense').textContent = formatCurrency(totalExpense);
+
+      // 2. Apply Filters for Table
+      const searchQuery = document.getElementById('filter-search').value.toLowerCase().trim();
+      const typeFilter = document.getElementById('filter-type').value;
+      const categoryFilter = document.getElementById('filter-category').value;
+
+      const filtered = allTransactions
+        .filter(t => {
+          const matchesSearch = t.title.toLowerCase().includes(searchQuery) ||
+            (t.notes && t.notes.toLowerCase().includes(searchQuery)) ||
+            t.category.toLowerCase().includes(searchQuery);
+          const matchesType = typeFilter === 'all' || t.type === typeFilter;
+          const matchesCat = categoryFilter === 'all' || t.category === categoryFilter;
+          return matchesSearch && matchesType && matchesCat;
+        })
+        .sort((a, b) => new Date(b.date) - new Date(a.date));
+
+      // 3. Render Table Rows
+      const tbody = document.getElementById('transactions-tbody');
+      const emptyState = document.getElementById('table-empty-state');
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = '';
+        emptyState.classList.remove('hidden');
+      } else {
+        emptyState.classList.add('hidden');
+        tbody.innerHTML = filtered.map(tx => {
+          const isIncome = tx.type === 'income';
+          const badgeColor = getCategoryColor(tx.category);
+          return `
+            <tr class="hover:bg-slate-50/90 transition group">
+              <td class="py-3.5 px-6">
+                <div class="flex items-center gap-3">
+                  <div class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${isIncome ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'}">
+                    <i data-lucide="${isIncome ? 'arrow-down-left' : 'arrow-up-right'}" class="w-4 h-4"></i>
+                  </div>
+                  <div>
+                    <p class="font-semibold text-slate-800">${escapeHTML(tx.title)}</p>
+                    ${tx.notes ? `<p class="text-xs text-slate-400 truncate max-w-xs">${escapeHTML(tx.notes)}</p>` : ''}
+                  </div>
+                </div>
+              </td>
+              <td class="py-3.5 px-4">
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-700">
+                  <span class="w-2 h-2 rounded-full" style="background-color: ${badgeColor}"></span>
+                  ${escapeHTML(tx.category)}
+                </span>
+              </td>
+              <td class="py-3.5 px-4 text-xs font-medium text-slate-500 whitespace-nowrap">
+                ${tx.date}
+              </td>
+              <td class="py-3.5 px-4 text-right font-bold whitespace-nowrap ${isIncome ? 'text-emerald-600' : 'text-rose-600'}">
+                ${isIncome ? '+' : '−'}${formatCurrency(tx.amount)}
+              </td>
+              <td class="py-3.5 px-6 text-right whitespace-nowrap">
+                <div class="inline-flex items-center gap-1">
+                  <button onclick="openEditModal('${tx.id}')" title="Edit"
+                    class="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition">
+                    <i data-lucide="pencil" class="w-4 h-4"></i>
+                  </button>
+                  <button onclick="openDeleteModal('${tx.id}')" title="Delete"
+                    class="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition">
+                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          `;
+        }).join('');
+      }
+
+      // 4. Render Expense Doughnut Chart
+      renderChart(allTransactions);
+      lucide.createIcons();
+    }
+
+    function renderChart(transactions) {
+      const expenses = transactions.filter(t => t.type === 'expense');
+      const canvas = document.getElementById('expenseChart');
+      const emptyChart = document.getElementById('chart-empty-state');
+      const legendContainer = document.getElementById('category-legend');
+
+      if (expenses.length === 0) {
+        canvas.classList.add('hidden');
+        emptyChart.classList.remove('hidden');
+        legendContainer.innerHTML = '';
+        if (expenseChartInstance) {
+          expenseChartInstance.destroy();
+          expenseChartInstance = null;
+        }
+        return;
+      }
+
+      canvas.classList.remove('hidden');
+      emptyChart.classList.add('hidden');
+
+      // Group by category
+      const totalsByCat = {};
+      expenses.forEach(e => {
+        totalsByCat[e.category] = (totalsByCat[e.category] || 0) + e.amount;
+      });
+
+      const sortedEntries = Object.entries(totalsByCat).sort((a, b) => b[1] - a[1]);
+      const labels = sortedEntries.map(e => e[0]);
+      const values = sortedEntries.map(e => e[1]);
+      const colors = labels.map(l => getCategoryColor(l));
+      const totalSpending = values.reduce((a, b) => a + b, 0);
+
+      // Update Custom Legend
+      legendContainer.innerHTML = sortedEntries.map(([cat, amt]) => {
+        const pct = ((amt / totalSpending) * 100).toFixed(1);
+        const color = getCategoryColor(cat);
+        return `
+          <div class="flex items-center justify-between py-1 border-b border-slate-50 last:border-0">
+            <div class="flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full shrink-0" style="background-color: ${color}"></span>
+              <span class="font-medium text-slate-700">${escapeHTML(cat)}</span>
+            </div>
+            <div class="text-right">
+              <span class="font-semibold text-slate-800">${formatCurrency(amt)}</span>
+              <span class="text-slate-400 ml-1">(${pct}%)</span>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      if (expenseChartInstance) {
+        expenseChartInstance.destroy();
+      }
+
+      expenseChartInstance = new Chart(canvas, {
+        type: 'doughnut',
+        data: {
+          labels,
+          datasets: [{
+            data: values,
+            backgroundColor: colors,
+            borderWidth: 2,
+            borderColor: '#ffffff',
+            hoverOffset: 4
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          cutout: '68%',
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: (ctx) => ` ${ctx.label}: ${formatCurrency(ctx.raw)}`
+              }
+            }
+          }
+        }
+      });
+    }
+
+    // --- Export CSV Utility ---
+    function exportToCSV() {
+      const session = getSession();
+      if (!session) return;
+      const transactions = getUserTransactions(session.email);
+      if (transactions.length === 0) {
+        showToast('No transactions to export', 'info');
+        return;
+      }
+
+      const headers = ['Date', 'Type', 'Title', 'Category', 'Amount', 'Notes'];
+      const rows = transactions.map(t => [
+        t.date,
+        t.type,
+        `"${(t.title || '').replace(/"/g, '""')}"`,
+        `"${(t.category || '').replace(/"/g, '""')}"`,
+        t.amount.toFixed(2),
+        `"${(t.notes || '').replace(/"/g, '""')}"`
+      ]);
+
+      const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `expense-tracker-${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast('CSV downloaded', 'success');
+    }
+
+    // --- Toast & Security Utilities ---
+    function showToast(message, type = 'success') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      const bg = type === 'success' ? 'bg-slate-900 text-white' : 'bg-slate-800 text-white';
+      const iconColor = type === 'success' ? 'text-emerald-400' : 'text-indigo-400';
+
+      toast.className = `${bg} px-4 py-3 rounded-xl shadow-lg text-xs font-semibold flex items-center gap-2.5 fade-in pointer-events-auto`;
+      toast.innerHTML = `
+        <i data-lucide="${type === 'success' ? 'check-circle-2' : 'info'}" class="w-4 h-4 ${iconColor}"></i>
+        <span>${escapeHTML(message)}</span>
+      `;
+      container.appendChild(toast);
+      lucide.createIcons();
+
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transition = 'opacity 0.25s ease';
+        setTimeout(() => toast.remove(), 250);
+      }, 2800);
+    }
+
+    function escapeHTML(str) {
+      const div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    }
+  </script>
+</body>
+</html>
